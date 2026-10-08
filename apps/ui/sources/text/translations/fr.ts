@@ -4010,6 +4010,7 @@ export const fr: TranslationStructure = {
             agy: { title: 'Antigravity' },
             fx: { title: "FX" },
             droid: { title: "Factory Droid" },
+            codebuddy: { title: "CodeBuddy" },
             grok: {
                 title: "Grok Build"
             },
@@ -6157,7 +6158,9 @@ export const fr: TranslationStructure = {
         fxSessionId: "ID de session FX",
         fxSessionIdCopied: "ID de session FX copié dans le presse-papiers",
         droidSessionId: "ID de session Factory Droid",
+        codebuddySessionId: "ID de session CodeBuddy",
         droidSessionIdCopied: "ID de session Factory Droid copié dans le presse-papiers",
+        codebuddySessionIdCopied: "ID de session CodeBuddy copié dans le presse-papiers",
         customAcpSessionId: 'ID de session Custom ACP',
         grokSessionId: "ID de session Grok",
         grokSessionIdCopied: "ID de session Grok copié dans le presse-papiers",
@@ -6398,6 +6401,7 @@ export const fr: TranslationStructure = {
             agy: 'Antigravity',
             fx: "FX",
             droid: "Factory Droid",
+            codebuddy: "CodeBuddy",
             customAcp: 'Custom ACP',
             pi: 'Pi',
             copilot: 'Copilot',
@@ -10560,6 +10564,7 @@ settingsSession: {
             agySubtitleExperimental: "CLI Antigravity (expérimental)",
             fxSubtitleExperimental: "FX CLI (expérimental)",
             droidSubtitleExperimental: "Factory Droid CLI (expérimental)",
+            codebuddySubtitleExperimental: "CodeBuddy Code CLI (expérimental)",
             customAcpSubtitleExperimental: 'CLI ACP personnalisé (expérimental)',
             grokSubtitleExperimental: "Grok Build CLI (expérimental)",
             piSubtitleExperimental: 'Pi CLI (expérimental)',

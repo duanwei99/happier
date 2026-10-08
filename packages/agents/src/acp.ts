@@ -122,6 +122,25 @@ export const BUILT_IN_ACP_CONFIG: Readonly<Partial<Record<AgentId, BuiltInAcpCon
     promptImageSupport: 'yes',
     mcpServers: 'pass',
   },
+  codebuddy: {
+    agentId: 'codebuddy',
+    launcher: { command: providerLauncherCommand('codebuddy'), args: ['--acp'] },
+    transportProfile: 'generic',
+    supportsLoadSession: true,
+    supportsModes: 'yes',
+    supportsModels: 'yes',
+    promptImageSupport: 'yes',
+    mcpServers: 'pass',
+    // Mode ids accepted by CodeBuddy Code 2.162.0 `session/set_mode`.
+    permissionModeMapping: {
+      default: null,
+      // Keep CodeBuddy prompting so Happier's permission handler enforces read-only.
+      'read-only': 'default',
+      'safe-yolo': 'acceptEdits',
+      yolo: 'bypassPermissions',
+      plan: 'plan',
+    },
+  },
 });
 
 export function hasBuiltInAcpConfig(agentId: AgentId): boolean {

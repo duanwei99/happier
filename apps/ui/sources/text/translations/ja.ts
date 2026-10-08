@@ -1491,6 +1491,7 @@ export const ja: TranslationStructure = {
       agySubtitleExperimental: "Antigravity CLI（実験）",
       fxSubtitleExperimental: "FX CLI（実験）",
       droidSubtitleExperimental: "Factory Droid CLI（実験）",
+      codebuddySubtitleExperimental: "CodeBuddy Code CLI（実験）",
       customAcpSubtitleExperimental: "カスタム ACP CLI（実験）",
       grokSubtitleExperimental: "Grok Build CLI（実験）",
       piSubtitleExperimental: "Pi CLI（実験）",
@@ -4582,6 +4583,7 @@ localTailscale: {
             agy: { title: 'Antigravity' },
             fx: { title: "FX" },
             droid: { title: "Factory Droid" },
+            codebuddy: { title: "CodeBuddy" },
             grok: {
                 title: "Grok Build"
             },
@@ -6818,7 +6820,9 @@ localTailscale: {
     fxSessionId: "FX セッション ID",
     fxSessionIdCopied: "FX セッション ID をクリップボードにコピーしました",
     droidSessionId: "Factory Droid セッション ID",
+    codebuddySessionId: "CodeBuddy セッション ID",
     droidSessionIdCopied: "Factory Droid セッション ID をクリップボードにコピーしました",
+    codebuddySessionIdCopied: "CodeBuddy セッション ID をクリップボードにコピーしました",
     customAcpSessionId: "カスタム ACP セッション ID",
     grokSessionId: "Grok セッション ID",
     grokSessionIdCopied: "Grok セッション ID をクリップボードにコピーしました",
@@ -7066,6 +7070,7 @@ localTailscale: {
       agy: 'Antigravity',
       fx: "FX",
       droid: "Factory Droid",
+      codebuddy: "CodeBuddy",
       customAcp: "カスタム ACP",
       pi: "Pi",
       copilot: "Copilot",

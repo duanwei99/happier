@@ -4179,6 +4179,7 @@ export const zhHans: TranslationStructure = {
             agy: { title: 'Antigravity' },
             fx: { title: "FX" },
             droid: { title: "Factory Droid" },
+            codebuddy: { title: "CodeBuddy" },
             grok: {
                 title: "Grok Build"
             },
@@ -6344,7 +6345,9 @@ export const zhHans: TranslationStructure = {
     fxSessionId: "FX 会话 ID",
     fxSessionIdCopied: "FX 会话 ID 已复制到剪贴板",
     droidSessionId: "Factory Droid 会话 ID",
+    codebuddySessionId: "CodeBuddy 会话 ID",
     droidSessionIdCopied: "Factory Droid 会话 ID 已复制到剪贴板",
+    codebuddySessionIdCopied: "CodeBuddy 会话 ID 已复制到剪贴板",
     customAcpSessionId: "自定义 ACP 会话 ID",
     grokSessionId: "Grok 会话 ID",
     grokSessionIdCopied: "Grok 会话 ID 已复制到剪贴板",
@@ -6587,6 +6590,7 @@ export const zhHans: TranslationStructure = {
       agy: 'Antigravity',
       fx: "FX",
       droid: "Factory Droid",
+      codebuddy: "CodeBuddy",
       customAcp: "Custom ACP",
       pi: "Pi",
       copilot: "Copilot",
@@ -10797,6 +10801,7 @@ settingsSession: {
       agySubtitleExperimental: "Antigravity 命令行（实验）",
       fxSubtitleExperimental: "FX 命令行（实验）",
       droidSubtitleExperimental: "Factory Droid 命令行（实验）",
+      codebuddySubtitleExperimental: "CodeBuddy Code 命令行（实验）",
       customAcpSubtitleExperimental: "自定义 ACP 命令行（实验）",
       grokSubtitleExperimental: "Grok Build 命令行（实验）",
       piSubtitleExperimental: "Pi 命令行（实验）",
