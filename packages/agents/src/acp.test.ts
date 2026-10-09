@@ -32,8 +32,8 @@ describe('built-in ACP config', () => {
       mcpServers: 'pass',
       permissionModeMapping: {
         default: null,
-        'read-only': 'default',
-        'safe-yolo': 'acceptEdits',
+        'read-only': 'dontAsk',
+        'safe-yolo': 'auto',
         yolo: 'bypassPermissions',
         plan: 'plan',
       },

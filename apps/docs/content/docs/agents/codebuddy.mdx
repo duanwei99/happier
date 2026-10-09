@@ -1,6 +1,6 @@
 ---
 title: CodeBuddy Code CLI (experimental)
-description: Run Tencent CodeBuddy Code through Happier with ACP sessions, dynamic models, permission modes, MCP tools, resume, and execution runs.
+description: Run Tencent CodeBuddy Code through Happier with ACP sessions, dynamic models, permission modes, resume, execution runs, and experimental image prompts and MCP tools.
 ---
 
 Happier runs your locally installed CodeBuddy Code CLI through
@@ -28,12 +28,22 @@ environment. Accounts on the China or iOA editions also set
 happier codebuddy
 ```
 
-Happier supports fresh and resumed sessions, cancellation, execution runs,
-image prompts, MCP tools, and the models and modes CodeBuddy advertises through
-ACP. Happier permission modes map onto CodeBuddy's own modes: **Auto** uses
-`acceptEdits`, **YOLO** uses `bypassPermissions`, and **Plan Mode** uses
-`plan`. **Read Only Mode** keeps CodeBuddy asking for permission so Happier can
-deny write-like tool calls. Happier does not copy a static model list.
+Happier supports fresh and resumed sessions, cancellation, execution runs, and
+the models and modes CodeBuddy advertises through ACP. Image prompts and
+Happier MCP tools are experimental for CodeBuddy. Happier does not copy a static
+model list.
+
+Happier permission modes map onto CodeBuddy's own modes, and CodeBuddy enforces
+them:
+
+- **Default** keeps your CodeBuddy permission settings.
+- **Read Only Mode** uses `dontAsk`: safe actions and anything you pre-approved
+  in CodeBuddy's permission settings run, and everything that would need
+  approval is denied without a prompt.
+- **Auto** uses `auto`: CodeBuddy's classifier approves safe actions and denies
+  risky ones.
+- **YOLO** uses `bypassPermissions`.
+- **Plan Mode** uses `plan`.
 
 CodeBuddy does not advertise ACP session listing, so Happier resumes sessions it
 started but cannot browse sessions created directly in the CodeBuddy terminal.

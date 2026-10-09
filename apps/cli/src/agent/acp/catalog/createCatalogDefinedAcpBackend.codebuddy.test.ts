@@ -1,83 +1,148 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
-import type { AgentBackend, SessionId } from '@/agent/core';
+import { describe, expect, it, vi } from 'vitest';
 
-const { createAcpBackend } = vi.hoisted(() => ({ createAcpBackend: vi.fn() }));
+import type { PermissionMode } from '@/api/types';
+import type { SessionId } from '@/agent/core';
+import { writeAcpTestAgentScript } from '@/agent/acp/testkit/subprocessHarness';
+import { withTempDir } from '@/testkit/fs/tempDir';
 
-vi.mock('@/agent/acp/createAcpBackend', () => ({ createAcpBackend }));
+const { launchSpec } = vi.hoisted(() => ({ launchSpec: { command: '', args: [] as string[] } }));
+
+// Managed-tool resolution reads the user's install; point it at a scripted ACP agent subprocess instead.
 vi.mock('@/runtime/managedTools/requireProviderCliLaunchSpec', () => ({
-  requireProviderCliLaunchSpec: () => ({ command: '/usr/local/bin/codebuddy', args: [] }),
+  requireProviderCliLaunchSpec: () => ({ command: launchSpec.command, args: [...launchSpec.args] }),
 }));
 
 import { createCatalogDefinedAcpBackend } from './createCatalogDefinedAcpBackend';
 
-function createBackend(): AgentBackend & { setSessionMode: ReturnType<typeof vi.fn> } {
-  return {
-    startSession: vi.fn(async () => ({ sessionId: 'started' as SessionId })),
-    loadSession: vi.fn(async (sessionId: SessionId) => ({ sessionId })),
-    sendPrompt: vi.fn(async () => {}),
-    cancel: vi.fn(async () => {}),
-    onMessage: vi.fn(),
-    dispose: vi.fn(async () => {}),
-    setSessionMode: vi.fn(async () => {}),
-  };
+type RecordedRequest = Readonly<{ method: string; params: Record<string, unknown> }>;
+
+function writeCodeBuddyAgentScript(dir: string): { scriptPath: string; callsPath: string; argvPath: string } {
+  const callsPath = join(dir, 'calls.jsonl');
+  const argvPath = join(dir, 'argv.json');
+  const scriptPath = writeAcpTestAgentScript({
+    dir,
+    fileName: 'fake-codebuddy-acp.mjs',
+    source: `
+      import { appendFileSync, writeFileSync } from 'node:fs';
+      import readline from 'node:readline';
+      writeFileSync(${JSON.stringify(argvPath)}, JSON.stringify(process.argv.slice(2)));
+      const modes = {
+        currentModeId: 'default',
+        availableModes: ['default', 'acceptEdits', 'plan', 'auto', 'dontAsk', 'bypassPermissions'].map((id) => ({ id, name: id })),
+      };
+      const rl = readline.createInterface({ input: process.stdin });
+      const send = (value) => process.stdout.write(JSON.stringify(value) + '\\n');
+      rl.on('line', (line) => {
+        const request = JSON.parse(line);
+        if (request.id === undefined) return;
+        appendFileSync(${JSON.stringify(callsPath)}, JSON.stringify({ method: request.method, params: request.params ?? {} }) + '\\n');
+        if (request.method === 'initialize') {
+          send({ jsonrpc: '2.0', id: request.id, result: { protocolVersion: 1, authMethods: [], agentCapabilities: { loadSession: true } } });
+          return;
+        }
+        if (request.method === 'session/new') {
+          send({ jsonrpc: '2.0', id: request.id, result: { sessionId: 'started', modes } });
+          return;
+        }
+        if (request.method === 'session/load') {
+          send({ jsonrpc: '2.0', id: request.id, result: { modes } });
+          return;
+        }
+        send({ jsonrpc: '2.0', id: request.id, result: {} });
+      });
+    `,
+  });
+  return { scriptPath, callsPath, argvPath };
 }
 
+function readCalls(callsPath: string): RecordedRequest[] {
+  return readFileSync(callsPath, 'utf8')
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => JSON.parse(line) as RecordedRequest);
+}
+
+function readSetModeIds(callsPath: string): unknown[] {
+  return readCalls(callsPath)
+    .filter((call) => call.method === 'session/set_mode')
+    .map((call) => call.params.modeId);
+}
+
+async function withCodeBuddyAgent(
+  prefix: string,
+  run: (agent: ReturnType<typeof writeCodeBuddyAgentScript>) => Promise<void>,
+): Promise<void> {
+  await withTempDir(prefix, async (dir) => {
+    const agent = writeCodeBuddyAgentScript(dir);
+    launchSpec.command = process.execPath;
+    launchSpec.args = [agent.scriptPath];
+    await run(agent);
+  });
+}
+
+// The scripted agent runs outside the scratch dir so Windows can remove it while the child exits.
+const agentCwd = tmpdir();
+
 describe('createCatalogDefinedAcpBackend (CodeBuddy Code)', () => {
-  beforeEach(() => {
-    createAcpBackend.mockReset();
-  });
-
-  it('launches `codebuddy --acp`, declares session/load, and passes Happier MCP servers through ACP', async () => {
-    const backend = createBackend();
-    createAcpBackend.mockReturnValue(backend);
-    const mcpServers = { happier: { command: 'happier-mcp' } };
-
-    const created = createCatalogDefinedAcpBackend('codebuddy' as never, {
-      cwd: '/workspace',
-      permissionMode: 'default',
-      mcpServers,
+  it('launches with `--acp`, forwards Happier MCP servers, and keeps CodeBuddy settings for Happier default', async () => {
+    await withCodeBuddyAgent('happier-codebuddy-default-', async ({ callsPath, argvPath }) => {
+      const backend = createCatalogDefinedAcpBackend('codebuddy', {
+        cwd: agentCwd,
+        permissionMode: 'default',
+        mcpServers: { happier: { command: 'happier-mcp', args: ['--stdio'] } },
+      });
+      try {
+        await expect(backend.startSession()).resolves.toEqual({ sessionId: 'started' });
+        expect(JSON.parse(readFileSync(argvPath, 'utf8'))).toEqual(['--acp']);
+        const sessionNew = readCalls(callsPath).find((call) => call.method === 'session/new');
+        expect(sessionNew?.params.mcpServers).toEqual([
+          expect.objectContaining({ name: 'happier', command: 'happier-mcp', args: ['--stdio'] }),
+        ]);
+        expect(readSetModeIds(callsPath)).toEqual([]);
+      } finally {
+        await backend.dispose();
+      }
     });
-    await created.startSession();
-
-    expect(createAcpBackend).toHaveBeenCalledWith(expect.objectContaining({
-      command: '/usr/local/bin/codebuddy',
-      args: ['--acp'],
-      declaredSessionLoadSupport: true,
-      sessionModesEnabled: true,
-      mcpServers,
-    }));
-    expect(backend.setSessionMode).not.toHaveBeenCalled();
-  });
+  }, 20_000);
 
   it.each([
-    ['read-only', 'default'],
-    ['safe-yolo', 'acceptEdits'],
+    ['read-only', 'dontAsk'],
+    ['safe-yolo', 'auto'],
     ['yolo', 'bypassPermissions'],
     ['plan', 'plan'],
-  ] as const)('applies explicit Happier mode %s as CodeBuddy ACP mode %s', async (permissionMode, codebuddyMode) => {
-    const backend = createBackend();
-    createAcpBackend.mockReturnValue(backend);
+  ] as const satisfies ReadonlyArray<readonly [PermissionMode, string]>)(
+    'enforces Happier %s through CodeBuddy mode %s on new sessions',
+    async (permissionMode, codebuddyMode) => {
+      await withCodeBuddyAgent('happier-codebuddy-mode-', async ({ callsPath }) => {
+        const backend = createCatalogDefinedAcpBackend('codebuddy', { cwd: agentCwd, permissionMode });
+        try {
+          await backend.startSession();
+          expect(readSetModeIds(callsPath)).toEqual([codebuddyMode]);
+        } finally {
+          await backend.dispose();
+        }
+      });
+    },
+    20_000,
+  );
 
-    const created = createCatalogDefinedAcpBackend('codebuddy' as never, {
-      cwd: '/workspace',
-      permissionMode,
+  it('re-enforces the mapped CodeBuddy mode after loading a vendor session', async () => {
+    await withCodeBuddyAgent('happier-codebuddy-load-', async ({ callsPath }) => {
+      const backend = createCatalogDefinedAcpBackend('codebuddy', { cwd: agentCwd, permissionMode: 'read-only' });
+      try {
+        await expect(backend.loadSession?.('resumed' as SessionId)).resolves.toEqual({ sessionId: 'resumed' });
+        const methods = readCalls(callsPath).map((call) => call.method);
+        expect(methods).not.toContain('session/new');
+        expect(methods.indexOf('session/set_mode')).toBeGreaterThan(methods.indexOf('session/load'));
+        expect(readSetModeIds(callsPath)).toEqual(['dontAsk']);
+      } finally {
+        await backend.dispose();
+      }
     });
-    await created.startSession();
-
-    expect(backend.setSessionMode).toHaveBeenCalledWith('started', codebuddyMode);
-  });
-
-  it('reapplies the explicit CodeBuddy mode after loading a vendor session', async () => {
-    const backend = createBackend();
-    createAcpBackend.mockReturnValue(backend);
-
-    const created = createCatalogDefinedAcpBackend('codebuddy' as never, {
-      cwd: '/workspace',
-      permissionMode: 'safe-yolo',
-    });
-    await created.loadSession?.('resumed' as SessionId);
-
-    expect(backend.setSessionMode).toHaveBeenCalledWith('resumed', 'acceptEdits');
-  });
+  }, 20_000);
 });
