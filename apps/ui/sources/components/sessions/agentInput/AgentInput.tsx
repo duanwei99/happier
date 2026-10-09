@@ -111,7 +111,7 @@ import { useRenderedAgentInputControlRows } from './controls/useRenderedAgentInp
 import { buildAgentInputSelectionOverlayViewModel } from './selection/buildAgentInputSelectionOverlayViewModel';
 import { useAgentInputSelectionAnchors } from './selection/useAgentInputSelectionAnchors';
 import { useAgentInputSelectionOverlayController } from './selection/useAgentInputSelectionOverlayController';
-import { computeSessionModePickerControl } from '@/sync/domains/sessionControl/sessionModeControl';
+import { computeSessionModePickerControl, getSessionModePickerOptions } from '@/sync/domains/sessionControl/sessionModeControl';
 import {
     computeSessionConfigOptionControls,
     computeSessionConfigOptionControlsForProvider,
@@ -1958,10 +1958,13 @@ export const AgentInput = React.memo(React.forwardRef<MultiTextInputHandle, Agen
         const selected = typeof props.acpSessionModeSelectedIdOverride === 'string'
             ? props.acpSessionModeSelectedIdOverride.trim()
             : '';
-        const effectiveId = selected || 'default';
-        const opt = preflightAcpSessionModeOptions?.find((o) => o.id === effectiveId) ?? null;
+        const pickerOptions = preflightAcpSessionModeOptions
+            ? getSessionModePickerOptions(preflightAcpSessionModeOptions, agentId)
+            : [];
+        const effectiveId = selected || (pickerOptions.some((option) => option.id === '') ? '' : 'default');
+        const opt = pickerOptions.find((option) => option.id === effectiveId) ?? null;
         return { id: effectiveId, name: opt?.name ?? (effectiveId === 'default' ? t('common.default') : effectiveId) };
-    }, [preflightAcpSessionModeOptions, props.acpSessionModeSelectedIdOverride]);
+    }, [agentId, preflightAcpSessionModeOptions, props.acpSessionModeSelectedIdOverride]);
     const sessionModeOptionsOverrideProbe = props.acpSessionModeOptionsOverrideProbe ?? null;
     const acpConfigOptionsOverrideProbe = props.acpConfigOptionsOverrideProbe ?? null;
 
@@ -1999,19 +2002,12 @@ export const AgentInput = React.memo(React.forwardRef<MultiTextInputHandle, Agen
 
     const sessionModePickerOptions = React.useMemo<ReadonlyArray<AgentInputChipPickerOption>>(() => {
         if (!sessionModeChipControl) return [];
-        const optionsById = new Map(sessionModeChipControl.options.map((option) => [option.id, option]));
-        const uniqueIds = Array.from(
-            new Set([
-                'default',
-                ...sessionModeChipControl.options.map((option) => option.id).filter((id) => id && id !== 'default'),
-            ]),
-        );
-        return uniqueIds.map((id) => ({
-            id,
-            label: optionsById.get(id)?.name ?? (id === 'default' ? t('common.default') : id),
-            subtitle: optionsById.get(id)?.description,
+        return getSessionModePickerOptions(sessionModeChipControl.options, agentId).map((option) => ({
+            id: option.id,
+            label: option.name,
+            subtitle: option.description,
         }));
-    }, [sessionModeChipControl]);
+    }, [agentId, sessionModeChipControl]);
 
     const shouldRenderSessionModeChip = React.useMemo(() => {
         return shouldRenderChipForOptions({
@@ -2027,17 +2023,13 @@ export const AgentInput = React.memo(React.forwardRef<MultiTextInputHandle, Agen
 
     const sessionModeChipInteraction = React.useMemo(() => {
         if (!sessionModeChipControl) return null;
-        const selectableOptionIds = Array.from(new Set(
-            sessionModeChipControl.options
-                .map((option) => option.id?.trim?.() ?? option.id)
-                .filter((id): id is string => typeof id === 'string' && id.length > 0),
-        ));
+        const selectableOptionIds = sessionModePickerOptions.map((option) => option.id);
         return resolveChipOptionInteraction({
             currentOptionId: sessionModeChipControl.selectedId,
             selectableOptionIds,
             cycleMaxOptions: DEFAULT_OPTION_CHIP_CYCLE_MAX_OPTIONS,
         });
-    }, [sessionModeChipControl]);
+    }, [sessionModeChipControl, sessionModePickerOptions]);
 
     const acpConfigOptionControls = React.useMemo(() => {
         if (armedComposerTarget || !props.onSessionConfigOptionChange) return null;

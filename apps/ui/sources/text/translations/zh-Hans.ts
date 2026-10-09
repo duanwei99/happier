@@ -6561,6 +6561,7 @@ export const zhHans: TranslationStructure = {
       title: "权限模式",
       effectiveLabel: ({ label }: { label: string }) => `生效：${label}`,
       nativeModeOverrides: ({ mode }: { mode: string }) => `智能体模式 ${mode} 优先于此权限设置。清除模式覆盖后即可使用权限设置。`,
+            usePermissionSetting: '使用权限设置',
       default: "默认",
       readOnly: "只读",
       acceptEdits: "接受编辑",

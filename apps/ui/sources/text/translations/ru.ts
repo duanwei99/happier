@@ -6771,6 +6771,7 @@ export const ru: TranslationStructure = {
       title: "РЕЖИМ РАЗРЕШЕНИЙ",
       effectiveLabel: ({ label }: { label: string }) => `Эффективно: ${label}`,
       nativeModeOverrides: ({ mode }: { mode: string }) => `Режим агента ${mode} имеет приоритет над этой настройкой разрешений. Сбросьте выбор режима, чтобы использовать настройку разрешений.`,
+            usePermissionSetting: 'Использовать настройку разрешений',
       default: "По умолчанию",
       readOnly: "Только чтение",
       acceptEdits: "Принимать правки",

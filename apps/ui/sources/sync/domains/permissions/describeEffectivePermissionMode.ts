@@ -86,7 +86,7 @@ export function describeEffectivePermissionMode(_params: {
 
     const effectiveMode = permissionMapping?.[selected] ? selected : normalized;
 
-    if (nativePolicy?.requestedModeId) {
+    if (nativePolicy?.isExplicitOverride && nativePolicy.requestedModeId) {
         reasons.push({ code: 'native_mode_overrides_permissions', params: { mode: nativePolicy.requestedModeName ?? nativePolicy.requestedModeId } });
         if (nativePolicy.isPending) {
             reasons.push({ code: 'native_mode_pending', params: { from: nativePolicy.currentModeName, to: nativePolicy.requestedModeName ?? nativePolicy.requestedModeId } });

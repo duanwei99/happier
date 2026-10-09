@@ -6372,6 +6372,7 @@ export const fr: TranslationStructure = {
             title: 'MODE DE PERMISSION',
             effectiveLabel: ({ label }: { label: string }) => `Effectif : ${label}`,
             nativeModeOverrides: ({ mode }: { mode: string }) => `Le mode de l’agent ${mode} a priorité sur ce réglage de permissions. Effacez la sélection de Mode pour utiliser ce réglage.`,
+            usePermissionSetting: 'Utiliser le réglage des permissions',
             default: 'Défaut',
             readOnly: 'Lecture seule',
             acceptEdits: 'Accepter les modifications',

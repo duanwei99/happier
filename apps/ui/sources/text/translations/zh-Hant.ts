@@ -5676,6 +5676,7 @@ const zhHantOverrides: DeepPartial<TranslationStructure> = {
         },
         permissionMode: {
             nativeModeOverrides: ({ mode }: { mode: string }) => `代理程式模式 ${mode} 優先於此權限設定。清除模式覆寫後即可使用權限設定。`,
+            usePermissionSetting: '使用權限設定',
             title: '權限模式',
             default: '預設',
             acceptEdits: '接受編輯',

@@ -6417,6 +6417,7 @@ export const en = {
             title: 'PERMISSION MODE',
             effectiveLabel: ({ label }: { label: string }) => `Effective: ${label}`,
             nativeModeOverrides: ({ mode }: { mode: string }) => `Agent Mode ${mode} overrides this permission setting. Clear the Mode override to use the permission setting.`,
+            usePermissionSetting: 'Use permission setting',
             default: 'Default',
             readOnly: 'Read Only',
             acceptEdits: 'Accept Edits',

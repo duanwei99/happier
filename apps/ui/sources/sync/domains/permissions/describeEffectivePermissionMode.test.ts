@@ -17,6 +17,23 @@ function buildMetadata(overrides: Partial<Metadata> = {}): Metadata {
 }
 
 describe('describeEffectivePermissionMode', () => {
+    it('does not describe generic Plan as an explicit native approval override', () => {
+        const res = describeEffectivePermissionMode({
+            agentType: 'codebuddy', selectedMode: 'plan', applyTiming: 'next_prompt',
+            metadata: buildMetadata({
+                permissionMode: 'plan',
+                sessionModesV1: {
+                    v: 1, provider: 'codebuddy', updatedAt: 1, currentModeId: 'auto',
+                    availableModes: [{ id: 'auto', name: 'Auto' }, { id: 'plan', name: 'Plan' }],
+                },
+            }),
+        });
+        expect(res.effectiveMode).toBe('plan');
+        expect(reasonCodes(res)).not.toContain('native_mode_overrides_permissions');
+        expect(reasonCodes(res)).not.toContain('native_mode_pending');
+        expect(reasonCodes(res)).toContain('applies_on_next_message');
+    });
+
     it.each(['codebuddy', 'devin', 'fx'] as const)('describes %s native policy without treating the permission selection as applied', (agentType) => {
         const res = describeEffectivePermissionMode({
             agentType,
