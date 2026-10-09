@@ -725,6 +725,32 @@ describe('AgentInput (modelOptionsOverride)', () => {
         expect(onAcpSessionModeChange).toHaveBeenCalledWith('');
     });
 
+    it.each([null, 'default'] as const)('checks the active-session override choice independently of its reported mode (%s)', async (modeId) => {
+        const screen = await renderScreen(React.createElement(AgentInput, {
+            value: '', placeholder: 'placeholder', onChangeText: () => {}, onSend: () => {},
+            autocompleteKinds: [], autocompleteSuggestions: async () => [],
+            agentType: 'codebuddy', onAcpSessionModeChange: vi.fn(),
+            metadata: {
+                path: '/tmp', host: 'test-host', flavor: 'codebuddy',
+                sessionModesV1: {
+                    v: 1, provider: 'codebuddy', updatedAt: 1, currentModeId: 'auto',
+                    availableModes: [
+                        { id: 'default', name: 'Native Default' }, { id: 'plan', name: 'Plan' },
+                        { id: 'auto', name: 'Auto' }, { id: 'dontAsk', name: "Don't ask" },
+                    ],
+                },
+                sessionModeOverrideV1: { v: 1, updatedAt: 2, modeId },
+            },
+        }));
+        expect(screen.findByTestId('agent-input-session-mode-chip')?.props.accessibilityLabel)
+            .toContain(modeId === null ? 'Auto' : 'Native Default');
+        await screen.pressByTestIdAsync('agent-input-session-mode-chip');
+        expect(screen.findByTestId('selection-list:session-mode-root:option-wrapper')?.props['aria-selected'])
+            .toBe(modeId === null);
+        expect(screen.findByTestId('selection-list:session-mode-root:option-wrapper:default')?.props['aria-selected'])
+            .toBe(modeId === 'default');
+    });
+
     it('cycles a small mapped native-mode list back to the permission setting', async () => {
         const onAcpSessionModeChange = vi.fn();
         const screen = await renderScreen(React.createElement(AgentInput, {
@@ -1597,7 +1623,7 @@ describe('AgentInput (modelOptionsOverride)', () => {
 
             expect(screen.findByTestId('agent-input-action-menu-overlay')).toBeNull();
             expect(screen.findByTestId('agent-input-selection-list-popover')).toBeNull();
-            expect(onAcpSessionModeChange).toHaveBeenCalledWith('plan');
+            expect(onAcpSessionModeChange).toHaveBeenCalledWith('build');
         } finally {
             mockAgentInputActionBarLayout = 'wrap';
         }

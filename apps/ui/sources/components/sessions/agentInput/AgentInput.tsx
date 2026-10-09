@@ -111,7 +111,7 @@ import { useRenderedAgentInputControlRows } from './controls/useRenderedAgentInp
 import { buildAgentInputSelectionOverlayViewModel } from './selection/buildAgentInputSelectionOverlayViewModel';
 import { useAgentInputSelectionAnchors } from './selection/useAgentInputSelectionAnchors';
 import { useAgentInputSelectionOverlayController } from './selection/useAgentInputSelectionOverlayController';
-import { computeSessionModePickerControl, getSessionModePickerOptions } from '@/sync/domains/sessionControl/sessionModeControl';
+import { computeSessionModePickerControl, getSessionModePickerOptions, resolveRequestedSessionModeIdForMetadata } from '@/sync/domains/sessionControl/sessionModeControl';
 import {
     computeSessionConfigOptionControls,
     computeSessionConfigOptionControlsForProvider,
@@ -1971,10 +1971,14 @@ export const AgentInput = React.memo(React.forwardRef<MultiTextInputHandle, Agen
     const sessionModeChipControl = React.useMemo(() => {
         if (armedComposerTarget || !props.onAcpSessionModeChange) return null;
         if (sessionModePickerControl) {
+            const clearOption = sessionModePickerControl.isExplicitOverride ? undefined
+                : getSessionModePickerOptions(sessionModePickerControl.options, agentId).find((option) =>
+                    resolveRequestedSessionModeIdForMetadata(sessionModePickerControl, option.id) === '');
             return {
                 options: sessionModePickerControl.options,
                 selectedId: (
-                    sessionModePickerControl.requestedModeId
+                    clearOption?.id
+                    ?? sessionModePickerControl.requestedModeId
                     ?? sessionModePickerControl.effectiveModeId
                     ?? 'default'
                 ),
@@ -1992,6 +1996,7 @@ export const AgentInput = React.memo(React.forwardRef<MultiTextInputHandle, Agen
         }
         return null;
     }, [
+        agentId,
         armedComposerTarget,
         preflightAcpSessionModeEffective.id,
         preflightAcpSessionModeEffective.name,
