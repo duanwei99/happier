@@ -8,6 +8,14 @@ import type { PermissionMode } from '@/api/types';
 import type { SessionId } from '@/agent/core';
 import { writeAcpTestAgentScript } from '@/agent/acp/testkit/subprocessHarness';
 import { withTempDir } from '@/testkit/fs/tempDir';
+import { createMutableApiSessionClientFixture } from '@/testkit/backends/sessionFixtures';
+import { createTestMetadata } from '@/testkit/backends/sessionMetadata';
+import { createApprovedPermissionHandler } from '@/testkit/backends/permissionHandler';
+import { createCatalogProviderAcpRuntime } from '@/agent/acp/runtime/createCatalogProviderAcpRuntime';
+import { createRuntimeOverrideSynchronizers } from '@/agent/runtime/createRuntimeOverrideSynchronizers';
+import { MessageBuffer } from '@/ui/ink/messageBuffer';
+import { createSessionProviderInputConsumer } from '@/agent/runtime/sessionInput/SessionProviderInputConsumer';
+import { MessageQueue2 } from '@/agent/runtime/modeMessageQueue';
 
 const { launchSpec } = vi.hoisted(() => ({ launchSpec: { command: '', args: [] as string[] } }));
 
@@ -89,6 +97,99 @@ async function withCodeBuddyAgent(
 const agentCwd = tmpdir();
 
 describe('createCatalogDefinedAcpBackend (CodeBuddy Code)', () => {
+  it.each(['create', 'resume'] as const)(
+    'preserves native modes across %s and permission restart, and restores mapped permissions on clear',
+    async (operation) => {
+      await withCodeBuddyAgent('happier-codebuddy-override-', async ({ callsPath }) => {
+        let permissionMode: PermissionMode = 'safe-yolo';
+        const session = createMutableApiSessionClientFixture({
+          metadata: createTestMetadata({
+            flavor: 'codebuddy',
+            sessionModeOverrideV1: { v: 1, updatedAt: 11, modeId: 'plan' },
+          }),
+        });
+        const runtime = createCatalogProviderAcpRuntime({
+          provider: 'codebuddy',
+          loggerLabel: 'CodeBuddyACP',
+          directory: agentCwd,
+          session,
+          messageBuffer: new MessageBuffer(),
+          mcpServers: {},
+          permissionHandler: createApprovedPermissionHandler(),
+          getPermissionMode: () => permissionMode,
+          sessionIdentity: { kind: 'manifest-metadata' },
+          onThinkingChange: () => {},
+          providerInputConsumer: createSessionProviderInputConsumer({
+            messageQueue: new MessageQueue2<unknown, unknown>(() => 'test'),
+            // The server boundary has no queued input in this mode-control scenario.
+            session: {
+              materializeNextPendingMessageSafely: async () => ({ type: 'no_pending' }),
+              waitForPendingEligibilityUpdate: async () => false,
+            },
+          }),
+        });
+        const sync = createRuntimeOverrideSynchronizers({
+          session,
+          runtime,
+          isStarted: () => runtime.getSessionId() !== null,
+        });
+        try {
+          await runtime.startOrLoad(operation === 'resume' ? { resumeId: 'resumed' } : {});
+          sync.syncFromMetadata();
+          await sync.flushPendingAfterStart();
+          expect(readSetModeIds(callsPath).at(-1)).toBe('plan');
+
+          // Permission changes retain the native override, including the existing restart path.
+          permissionMode = 'read-only';
+          sync.syncFromMetadata();
+          await sync.flushPendingAfterStart();
+          expect(readSetModeIds(callsPath).at(-1)).toBe('plan');
+          const resumeId = runtime.getSessionId();
+          await runtime.reset();
+          await runtime.startOrLoad({ resumeId });
+          expect(readSetModeIds(callsPath).at(-1)).toBe('plan');
+
+          session.updateMetadata((metadata) => metadata && {
+            ...metadata,
+            sessionModeOverrideV1: { v: 1, updatedAt: 22, modeId: null },
+          });
+          sync.syncFromMetadata();
+          await sync.flushPendingAfterStart();
+          expect(readSetModeIds(callsPath).at(-1)).toBe('dontAsk');
+
+          session.updateMetadata((metadata) => metadata && {
+            ...metadata,
+            sessionModeOverrideV1: { v: 1, updatedAt: 31, modeId: 'auto' },
+          });
+          sync.syncFromMetadata();
+          await sync.flushPendingAfterStart();
+          expect(readSetModeIds(callsPath).at(-1)).toBe('auto');
+
+          session.updateMetadata((metadata) => metadata && {
+            ...metadata,
+            sessionModeOverrideV1: { v: 1, updatedAt: 23, modeId: null },
+          });
+          sync.syncFromMetadata();
+          await sync.flushPendingAfterStart();
+          expect(readSetModeIds(callsPath).at(-1)).toBe('auto');
+
+          // Unmapped default defers to provider policy rather than inventing a reset mode.
+          permissionMode = 'default';
+          session.updateMetadata((metadata) => metadata && {
+            ...metadata,
+            sessionModeOverrideV1: { v: 1, updatedAt: 32, modeId: null },
+          });
+          sync.syncFromMetadata();
+          await sync.flushPendingAfterStart();
+          expect(readSetModeIds(callsPath).at(-1)).toBe('auto');
+        } finally {
+          await runtime.reset();
+        }
+      });
+    },
+    20_000,
+  );
+
   it('launches with `--acp`, forwards Happier MCP servers, and keeps CodeBuddy settings for Happier default', async () => {
     await withCodeBuddyAgent('happier-codebuddy-default-', async ({ callsPath, argvPath }) => {
       const backend = createCatalogDefinedAcpBackend('codebuddy', {
