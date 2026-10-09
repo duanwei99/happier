@@ -6383,6 +6383,7 @@ deps: {
         permissionMode: {
             title: 'MODE DE PERMISOS',
             effectiveLabel: ({ label }: { label: string }) => `Efectiu: ${label}`,
+            nativeModeOverrides: ({ mode }: { mode: string }) => `El mode de l’agent ${mode} té prioritat sobre aquest permís. Esborra la selecció de Mode per utilitzar el permís.`,
             default: 'Per defecte',
             readOnly: 'Només lectura',
             acceptEdits: 'Accepta edicions',

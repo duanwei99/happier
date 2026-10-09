@@ -6787,6 +6787,7 @@ export const pl: TranslationStructure = {
     permissionMode: {
       title: "TRYB UPRAWNIEŃ",
       effectiveLabel: ({ label }: { label: string }) => `Obowiązuje: ${label}`,
+      nativeModeOverrides: ({ mode }: { mode: string }) => `Tryb agenta ${mode} ma pierwszeństwo przed tym ustawieniem uprawnień. Usuń wybór trybu, aby użyć ustawienia uprawnień.`,
       default: "Domyślny",
       readOnly: "Tylko do odczytu",
       acceptEdits: "Akceptuj edycje",

@@ -7040,6 +7040,7 @@ localTailscale: {
     permissionMode: {
       title: "権限モード",
       effectiveLabel: ({ label }: { label: string }) => `適用中: ${label}`,
+      nativeModeOverrides: ({ mode }: { mode: string }) => `エージェントモード ${mode} がこの権限設定より優先されます。権限設定を使うにはモードの上書きを解除してください。`,
       default: "デフォルト",
       readOnly: "読み取り専用",
       acceptEdits: "編集を許可",

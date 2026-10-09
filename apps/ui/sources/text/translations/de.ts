@@ -6384,6 +6384,7 @@ export const de: TranslationStructure = {
         permissionMode: {
             title: 'BERECHTIGUNGSMODUS',
             effectiveLabel: ({ label }: { label: string }) => `Effektiv: ${label}`,
+            nativeModeOverrides: ({ mode }: { mode: string }) => `Der Agent-Modus ${mode} hat Vorrang vor dieser Berechtigungseinstellung. Entferne die Modus-Auswahl, um die Berechtigungseinstellung zu verwenden.`,
             default: 'Standard',
             readOnly: 'Nur Lesen',
             acceptEdits: 'Änderungen annehmen',

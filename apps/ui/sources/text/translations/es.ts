@@ -6769,6 +6769,7 @@ export const es: TranslationStructure = {
     permissionMode: {
       title: "MODO DE PERMISOS",
       effectiveLabel: ({ label }: { label: string }) => `Efectivo: ${label}`,
+      nativeModeOverrides: ({ mode }: { mode: string }) => `El modo del agente ${mode} tiene prioridad sobre este permiso. Borra la selección de Modo para usar el permiso.`,
       default: "Por defecto",
       readOnly: "Solo lectura",
       acceptEdits: "Aceptar ediciones",

@@ -2383,8 +2383,9 @@ export const AgentInput = React.memo(React.forwardRef<MultiTextInputHandle, Agen
     }, [onAgentPickerVisibilityChange, showAgentPicker]);
 
     const effectivePermissionLabel = React.useMemo(() => {
-        return getPermissionModeLabelForAgentType(engineChipAgentId, effectivePermissionPolicy.effectiveMode);
-    }, [engineChipAgentId, effectivePermissionPolicy.effectiveMode]);
+        return effectivePermissionPolicy.nativeModeLabel
+            ?? getPermissionModeLabelForAgentType(engineChipAgentId, effectivePermissionPolicy.effectiveMode);
+    }, [engineChipAgentId, effectivePermissionPolicy.effectiveMode, effectivePermissionPolicy.nativeModeLabel]);
 
     const activeStatusBadge = React.useMemo(() => (
         activeStatusBadgeKey
