@@ -2713,7 +2713,10 @@ await server.connect(new StdioServerTransport());
       title: 'mcp: change_title via Happier MCP server',
       tier: 'extended',
       yolo: true,
-      maxTraceEvents: { toolCalls: 1, toolResults: 1, permissionRequests: 1 },
+      // CodeBuddy resolves deferred MCP tools with a `ToolSearch` call before executing them.
+      maxTraceEvents: provider.id === 'codebuddy'
+        ? { toolCalls: 2, toolResults: 2, permissionRequests: 1 }
+        : { toolCalls: 1, toolResults: 1, permissionRequests: 1 },
       prompt: ({ workspaceDir }) =>
         [
           'Run exactly one tool call:',
